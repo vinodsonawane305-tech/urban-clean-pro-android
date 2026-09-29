@@ -1,10 +1,10 @@
 name: Build Urban Clean Pro APK
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,40 +16,34 @@ jobs:
 
       - name: Extract Android project ZIP
         run: |
-          mkdir app-source
-          unzip -q "urban-clean-pro-github-actions-final.zip" -d app-source
+          mkdir -p app-source
+          unzip -o urban-clean-pro-github-actions-final.zip -d app-source
 
-      - name: Find Gradle project
-        run: |
-          GRADLEW=$(find app-source -name gradlew -type f | head -n 1)
-          if [ -z "$GRADLEW" ]; then
-            echo "gradlew not found"
-            exit 1
-          fi
-          chmod +x "$GRADLEW"
-          echo "GRADLEW=$GRADLEW" >> $GITHUB_ENV
-          echo "PROJECT_DIR=$(dirname "$GRADLEW")" >> $GITHUB_ENV
-
-      - name: Set up Java
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
 
-      - name: Set up Android SDK
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android SDK
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Find Android project
         run: |
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
-          yes | sdkmanager --licenses || true
+          PROJECT_DIR=$(find app-source -type f \( -name "settings.gradle" -o -name "settings.gradle.kts" \) -print -quit | xargs dirname)
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Build Debug APK
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          gradle -p "$PROJECT_DIR" assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Urban-Clean-Pro-APK
-          path: "**/build/outputs/apk/debug/*.apk"
+          name: urban-clean-pro-debug-apk
+          path: "${{ env.PROJECT_DIR }}/**/build/outputs/apk/debug/*.apk"
