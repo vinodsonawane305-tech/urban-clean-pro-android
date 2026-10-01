@@ -17,7 +17,7 @@ jobs:
       - name: Extract Android project ZIP
         run: |
           mkdir -p app-source
-          ZIP_FILE=$(find . -maxdepth 1 -type f -name "*.zip" | head -n 1)
+          ZIP_FILE="./UrbanCleanPro-APK-LATEST-v1.2.zip"
 
           if [ -z "$ZIP_FILE" ]; then
             echo "Android project ZIP not found"
